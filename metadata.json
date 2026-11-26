@@ -1,0 +1,6 @@
+{
+  "name": "XTRIP — Extreme Trip",
+  "description": "Personal travel companion to plan trips, track budgets and expenses, log places visited, and preserve travel memories.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

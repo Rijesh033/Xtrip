@@ -1,0 +1,143 @@
+{
+  "entities": {
+    "Profile": {
+      "title": "User Profile",
+      "description": "Authenticated traveler profile and preferences.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "fullName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "email": { "type": "string", "format": "email", "minLength": 3, "maxLength": 254 },
+        "avatarUrl": { "type": "string", "minLength": 0, "maxLength": 500 },
+        "preferredCurrency": {
+          "type": "string",
+          "enum": ["INR", "USD", "EUR", "GBP", "AED", "JPY", "AUD", "CAD", "CHF", "SGD"]
+        },
+        "themePreference": {
+          "type": "string",
+          "enum": ["dark", "light", "system"]
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "fullName", "email", "avatarUrl", "preferredCurrency", "themePreference", "createdAt", "updatedAt"]
+    },
+    "Trip": {
+      "title": "Trip",
+      "description": "Travel expedition record owned by an authenticated user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "destination": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "startDate": { "type": "string", "minLength": 10, "maxLength": 10, "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "endDate": { "type": "string", "minLength": 10, "maxLength": 10, "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "budget": { "type": "number" },
+        "currency": {
+          "type": "string",
+          "enum": ["INR", "USD", "EUR", "GBP", "AED", "JPY", "AUD", "CAD", "CHF", "SGD"]
+        },
+        "description": { "type": "string", "minLength": 0, "maxLength": 2000 },
+        "coverImage": { "type": "string", "minLength": 0, "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "destination", "startDate", "endDate", "budget", "currency", "description", "coverImage", "createdAt", "updatedAt"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Expense entry belonging to a trip and user.",
+      "type": "object",
+      "properties": {
+        "tripId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "amount": { "type": "number" },
+        "category": {
+          "type": "string",
+          "enum": ["Food", "Accommodation", "Transport", "Shopping", "Activities", "Places", "Other"]
+        },
+        "expenseDate": { "type": "string", "minLength": 10, "maxLength": 10, "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "notes": { "type": "string", "minLength": 0, "maxLength": 1000 },
+        "receiptImage": { "type": "string", "minLength": 0, "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["tripId", "userId", "title", "amount", "category", "expenseDate", "notes", "receiptImage", "createdAt", "updatedAt"]
+    },
+    "Place": {
+      "title": "Place Visited",
+      "description": "Location visited during a trip.",
+      "type": "object",
+      "properties": {
+        "tripId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "location": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "visitedDate": { "type": "string", "minLength": 10, "maxLength": 10, "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "notes": { "type": "string", "minLength": 0, "maxLength": 2000 },
+        "photoUrl": { "type": "string", "minLength": 0, "maxLength": 500 },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["tripId", "userId", "name", "location", "visitedDate", "notes", "photoUrl", "createdAt", "updatedAt"]
+    },
+    "Memory": {
+      "title": "Travel Memory",
+      "description": "Photo journal memory associated with a trip.",
+      "type": "object",
+      "properties": {
+        "tripId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "photoUrl": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "caption": { "type": "string", "minLength": 0, "maxLength": 500 },
+        "memoryDate": { "type": "string", "minLength": 10, "maxLength": 10, "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["tripId", "userId", "photoUrl", "caption", "memoryDate", "createdAt", "updatedAt"]
+    },
+    "MediaAsset": {
+      "title": "Media Asset",
+      "description": "User-uploaded compressed image asset persisted in Firestore.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "tripId": { "type": "string", "minLength": 0, "maxLength": 128 },
+        "dataUrl": { "type": "string", "minLength": 10, "maxLength": 750000 },
+        "mimeType": { "type": "string", "enum": ["image/webp", "image/jpeg", "image/png"] },
+        "sizeBytes": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "tripId", "dataUrl", "mimeType", "sizeBytes", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/profiles/{userId}": {
+      "schema": { "$ref": "#/entities/Profile" },
+      "description": "Private user profile and currency/theme preferences."
+    },
+    "/trips/{tripId}": {
+      "schema": { "$ref": "#/entities/Trip" },
+      "description": "User-owned trip documents."
+    },
+    "/expenses/{expenseId}": {
+      "schema": { "$ref": "#/entities/Expense" },
+      "description": "Expenses linked to a specific trip and owner."
+    },
+    "/places/{placeId}": {
+      "schema": { "$ref": "#/entities/Place" },
+      "description": "Visited places linked to a specific trip and owner."
+    },
+    "/memories/{memoryId}": {
+      "schema": { "$ref": "#/entities/Memory" },
+      "description": "Photo journal memories linked to a specific trip and owner."
+    },
+    "/media/{mediaId}": {
+      "schema": { "$ref": "#/entities/MediaAsset" },
+      "description": "Persistent user-uploaded compressed images."
+    }
+  }
+}

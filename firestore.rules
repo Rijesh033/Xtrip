@@ -1,0 +1,248 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Shared primitive helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidCurrency(code) {
+      return code in ['INR', 'USD', 'EUR', 'GBP', 'AED', 'JPY', 'AUD', 'CAD', 'CHF', 'SGD'];
+    }
+
+    function isValidTheme(theme) {
+      return theme in ['dark', 'light', 'system'];
+    }
+
+    function isValidDateStr(val) {
+      return val is string && val.size() == 10 && val.matches('^\\d{4}-\\d{2}-\\d{2}$');
+    }
+
+    function isValidExpenseCategory(cat) {
+      return cat in ['Food', 'Accommodation', 'Transport', 'Shopping', 'Activities', 'Places', 'Other'];
+    }
+
+    function ownsTrip(tripId) {
+      return exists(/databases/$(database)/documents/trips/$(tripId)) &&
+        get(/databases/$(database)/documents/trips/$(tripId)).data.userId == request.auth.uid;
+    }
+
+    // Entity validation blueprints
+    function isValidProfile(data) {
+      return data.keys().hasAll(['uid', 'fullName', 'email', 'avatarUrl', 'preferredCurrency', 'themePreference', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'fullName', 'email', 'avatarUrl', 'preferredCurrency', 'themePreference', 'createdAt', 'updatedAt']) &&
+        isValidId(data.uid) &&
+        data.uid == request.auth.uid &&
+        data.fullName is string && data.fullName.size() >= 1 && data.fullName.size() <= 100 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 254 &&
+        data.avatarUrl is string && data.avatarUrl.size() <= 500 &&
+        isValidCurrency(data.preferredCurrency) &&
+        isValidTheme(data.themePreference) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidTrip(data) {
+      return data.keys().hasAll(['userId', 'name', 'destination', 'startDate', 'endDate', 'budget', 'currency', 'description', 'coverImage', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['userId', 'name', 'destination', 'startDate', 'endDate', 'budget', 'currency', 'description', 'coverImage', 'createdAt', 'updatedAt']) &&
+        isValidId(data.userId) &&
+        data.userId == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+        data.destination is string && data.destination.size() >= 1 && data.destination.size() <= 120 &&
+        isValidDateStr(data.startDate) &&
+        isValidDateStr(data.endDate) &&
+        data.endDate >= data.startDate &&
+        (data.budget is int || data.budget is float) && data.budget >= 0 && data.budget <= 1000000000 &&
+        isValidCurrency(data.currency) &&
+        data.description is string && data.description.size() <= 2000 &&
+        data.coverImage is string && data.coverImage.size() <= 500 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidExpense(data) {
+      return data.keys().hasAll(['tripId', 'userId', 'title', 'amount', 'category', 'expenseDate', 'notes', 'receiptImage', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['tripId', 'userId', 'title', 'amount', 'category', 'expenseDate', 'notes', 'receiptImage', 'createdAt', 'updatedAt']) &&
+        isValidId(data.tripId) &&
+        isValidId(data.userId) &&
+        data.userId == request.auth.uid &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+        (data.amount is int || data.amount is float) && data.amount > 0 && data.amount <= 1000000000 &&
+        isValidExpenseCategory(data.category) &&
+        isValidDateStr(data.expenseDate) &&
+        data.notes is string && data.notes.size() <= 1000 &&
+        data.receiptImage is string && data.receiptImage.size() <= 500 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidPlace(data) {
+      return data.keys().hasAll(['tripId', 'userId', 'name', 'location', 'visitedDate', 'notes', 'photoUrl', 'latitude', 'longitude', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['tripId', 'userId', 'name', 'location', 'visitedDate', 'notes', 'photoUrl', 'latitude', 'longitude', 'createdAt', 'updatedAt']) &&
+        isValidId(data.tripId) &&
+        isValidId(data.userId) &&
+        data.userId == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+        data.location is string && data.location.size() >= 1 && data.location.size() <= 200 &&
+        isValidDateStr(data.visitedDate) &&
+        data.notes is string && data.notes.size() <= 2000 &&
+        data.photoUrl is string && data.photoUrl.size() <= 500 &&
+        (data.latitude == null || ((data.latitude is int || data.latitude is float) && data.latitude >= -90 && data.latitude <= 90)) &&
+        (data.longitude == null || ((data.longitude is int || data.longitude is float) && data.longitude >= -180 && data.longitude <= 180)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidMemory(data) {
+      return data.keys().hasAll(['tripId', 'userId', 'photoUrl', 'caption', 'memoryDate', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['tripId', 'userId', 'photoUrl', 'caption', 'memoryDate', 'createdAt', 'updatedAt']) &&
+        isValidId(data.tripId) &&
+        isValidId(data.userId) &&
+        data.userId == request.auth.uid &&
+        data.photoUrl is string && data.photoUrl.size() >= 1 && data.photoUrl.size() <= 500 &&
+        data.caption is string && data.caption.size() <= 500 &&
+        isValidDateStr(data.memoryDate) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidMedia(data) {
+      return data.keys().hasAll(['userId', 'tripId', 'dataUrl', 'mimeType', 'sizeBytes', 'createdAt']) &&
+        data.keys().hasOnly(['userId', 'tripId', 'dataUrl', 'mimeType', 'sizeBytes', 'createdAt']) &&
+        isValidId(data.userId) &&
+        data.userId == request.auth.uid &&
+        data.tripId is string && data.tripId.size() <= 128 &&
+        data.dataUrl is string && data.dataUrl.size() >= 10 && data.dataUrl.size() <= 750000 &&
+        data.dataUrl.matches('^data:image/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$') &&
+        data.mimeType in ['image/webp', 'image/jpeg', 'image/png'] &&
+        data.sizeBytes is int && data.sizeBytes > 0 && data.sizeBytes <= 600000 &&
+        data.createdAt is timestamp;
+    }
+
+    // Profiles (PII strictly isolated to owner)
+    match /profiles/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if false;
+      allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId &&
+        isValidProfile(incoming()) &&
+        incoming().uid == userId &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isValidId(userId) && request.auth.uid == userId &&
+        isValidProfile(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'email', 'avatarUrl', 'preferredCurrency', 'themePreference', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+    }
+
+    // Trips
+    match /trips/{tripId} {
+      allow get: if isSignedIn() && isValidId(tripId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(tripId) &&
+        isValidTrip(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isValidId(tripId) &&
+        isValidTrip(incoming()) &&
+        existing().userId == request.auth.uid &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'destination', 'startDate', 'endDate', 'budget', 'currency', 'description', 'coverImage', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(tripId) && existing().userId == request.auth.uid;
+    }
+
+    // Expenses
+    match /expenses/{expenseId} {
+      allow get: if isSignedIn() && isValidId(expenseId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(expenseId) &&
+        isValidExpense(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        ownsTrip(incoming().tripId);
+      allow update: if isSignedIn() && isValidId(expenseId) &&
+        isValidExpense(incoming()) &&
+        existing().userId == request.auth.uid &&
+        incoming().userId == existing().userId &&
+        incoming().tripId == existing().tripId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'amount', 'category', 'expenseDate', 'notes', 'receiptImage', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(expenseId) && existing().userId == request.auth.uid;
+    }
+
+    // Places Visited
+    match /places/{placeId} {
+      allow get: if isSignedIn() && isValidId(placeId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(placeId) &&
+        isValidPlace(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        ownsTrip(incoming().tripId);
+      allow update: if isSignedIn() && isValidId(placeId) &&
+        isValidPlace(incoming()) &&
+        existing().userId == request.auth.uid &&
+        incoming().userId == existing().userId &&
+        incoming().tripId == existing().tripId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'location', 'visitedDate', 'notes', 'photoUrl', 'latitude', 'longitude', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(placeId) && existing().userId == request.auth.uid;
+    }
+
+    // Memories
+    match /memories/{memoryId} {
+      allow get: if isSignedIn() && isValidId(memoryId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(memoryId) &&
+        isValidMemory(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        ownsTrip(incoming().tripId);
+      allow update: if isSignedIn() && isValidId(memoryId) &&
+        isValidMemory(incoming()) &&
+        existing().userId == request.auth.uid &&
+        incoming().userId == existing().userId &&
+        incoming().tripId == existing().tripId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['photoUrl', 'caption', 'memoryDate', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(memoryId) && existing().userId == request.auth.uid;
+    }
+
+    // Media Assets
+    match /media/{mediaId} {
+      allow get: if isSignedIn() && isValidId(mediaId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(mediaId) &&
+        isValidMedia(incoming()) &&
+        incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isSignedIn() && isValidId(mediaId) && existing().userId == request.auth.uid;
+    }
+  }
+}
